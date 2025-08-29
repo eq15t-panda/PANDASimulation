@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import sys 
 
-sys.path.insert(0,'/Users/gadanimatteo/Desktop/SqueezingSimulation')
+sys.path.insert(0,'/Users/gadanimatteo/Documents/Stage LKB/SqueezingSimulation')
 
 import cavity.cavity_formulas as cf
 from utils.settings import settings
@@ -19,7 +19,11 @@ import csv
 import os
 from datetime import datetime
 
-
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.size": 14
+})
 
 def waist():
     """
@@ -106,21 +110,22 @@ def waist():
         fig_waist, ax1 = plt.subplots(figsize=(16, 9))
 
         color1 = 'tab:red'
-        ax1.set_xlabel(xlabel)
-        ax1.set_ylabel(r'Beam waist size $w_1$ (um)', color=color1)
+        ax1.set_xlabel(xlabel, fontsize = 35)
+        ax1.set_ylabel(r'Beam waist size $w_1$ ($\mu$m)', color=color1, fontsize = 35)
         ax1.plot(sweep_array[valid_indices[0]] * 1e3, w1[valid_indices[0]] * 1e6, color=color1)
-        ax1.tick_params(axis='y', labelcolor=color1)
+        ax1.tick_params(axis='y', labelcolor=color1, labelsize=30)
+        ax1.tick_params(axis='x', labelsize=30)
 
         color2 = 'tab:blue'
         ax2 = ax1.twinx()
-        ax2.set_ylabel(r'Beam waist size $w_2$ (um)', color=color2)
+        ax2.set_ylabel(r'Beam waist size $w_2$ ($\mu$m)', color=color2, fontsize = 35)
         ax2.plot(sweep_array[valid_indices[1]] * 1e3, w2[valid_indices[1]] * 1e6, color=color2)
-        ax2.tick_params(axis='y', labelcolor=color2)
+        ax2.tick_params(axis='y', labelcolor=color2, labelsize=30)
 
         # Display parameters used
-        text_box = AnchoredText(box_text, frameon=True, loc='upper right', pad=0.5)
-        plt.setp(text_box.patch, facecolor='white', alpha=settings.alpha)
-        plt.gca().add_artist(text_box)
+        #text_box = AnchoredText(box_text, frameon=True, loc='upper right', pad=0.5)
+        #plt.setp(text_box.patch, facecolor='white', alpha=settings.alpha)
+        #plt.gca().add_artist(text_box)
 
         fig_waist.tight_layout()
         plt.show()

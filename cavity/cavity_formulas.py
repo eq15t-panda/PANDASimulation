@@ -1,7 +1,7 @@
 #%%
 import numpy as np
 import sys
-sys.path.insert(0,'/Users/gadanimatteo/Desktop/SqueezingSimulation')
+sys.path.insert(0,'/Users/gadanimatteo/Documents/Stage LKB/SqueezingSimulation')
 import cavity.finding_distances as fd
 from utils.settings import settings
 from cavity.ABCD_matrix import free_space
@@ -90,7 +90,7 @@ def ABCD_Matrix(L, d_curved, R, l_crystal, index_crystal=settings.crystal_index)
         free_space((L - d_curved)/2) @         # M1 → M2
         curved_mirror(R) @       # M2
         free_space((d_curved - l_crystal)/2) @          # M2 → M3
-        refract_interface(index_crystal,1) @       # M3
+        refract_interface(index_crystal, 1) @       # M3
         free_space(l_crystal/2) 
     )
     A1, B1, C1, D1 = M.flatten()
@@ -139,35 +139,52 @@ def return_waist(d_curved, L, R, l_crystal, index_crystal=settings.crystal_index
 
 
 def Beam_waist(d_curved, L, R, l_crystal, index_crystal=settings.crystal_index, wavelength=settings.wavelength):
-    """
-    Calculates the beam waist size in radius at the center of the nonlinear optical crystal and the intermediate
-    between flat mirrors
-    :param d_curved: Distance between curved mirrors
-    :param L: Cavity length
-    :param R: Radii of curvature of curved mirror
-    :param l_crystal: Length of non-linear crystal
-    :param index_crystal: Index of refraction of non-linear medium (by default 1)
-    :param wavelength:
-    :return: Tuple (w1, w2, valid_indices)
-    """
-    A1, B1, C1, D1 = ABCD_Matrix(L=L, d_curved=d_curved, R=R, l_crystal=l_crystal, index_crystal=index_crystal)
-    z1, z2 = z_parameter(A1, B1, C1, D1)
+    d_curved = np.atleast_1d(d_curved)
+    scalar_input = d_curved.ndim == 0 or len(d_curved) == 1
 
-    temp1 = np.full(shape=z1.shape, fill_value=np.nan, dtype=np.float32)
-    valid_indices_1 = np.where(z1 >= 0)  # ensures the square root is taken for positive terms only
-    temp1[valid_indices_1] = np.sqrt(z1[valid_indices_1])
-    w1 = np.sqrt((wavelength / (index_crystal * np.pi)) * temp1)  # the first waist is in the crystal of index n1
+    z1_list, z2_list, w1_list, w2_list = [], [], [], []
+    valid_1, valid_2 = [], []
 
-    temp2 = np.full(shape=z2.shape, fill_value=np.nan, dtype=np.float32)
-    valid_indices_2 = np.where(z2 >= 0)  # ensures the square root is taken for positive terms only
-    temp2[valid_indices_2] = np.sqrt(z2[valid_indices_2])
-    w2 = np.sqrt((wavelength / np.pi) * temp2)   # the second waist is in the air so n=1
+    for dc in d_curved:
+        A1, B1, C1, D1 = ABCD_Matrix(L=L, d_curved=dc, R=R, l_crystal=l_crystal, index_crystal=index_crystal)
+        z1, z2 = z_parameter(A1, B1, C1, D1)
 
-    # w2 = index_crystal * w1 / np.sqrt((C1*temp1)**2 + D1**2)
+        z1_list.append(z1)
+        z2_list.append(z2)
 
-    valid_indices = (valid_indices_1, valid_indices_2)
+        if z1 >= 0:
+            temp1 = np.sqrt(z1)
+            w1 = np.sqrt((wavelength / (index_crystal * np.pi)) * temp1)
+            valid_1.append(True)
+        else:
+            w1 = np.nan
+            valid_1.append(False)
 
-    return z1, z2, w1, w2, valid_indices
+        if z2 >= 0:
+            temp2 = np.sqrt(z2)
+            w2 = np.sqrt((wavelength / np.pi) * temp2)
+            valid_2.append(True)
+        else:
+            w2 = np.nan
+            valid_2.append(False)
+
+        w1_list.append(w1)
+        w2_list.append(w2)
+
+    z1_array = np.array(z1_list)
+    z2_array = np.array(z2_list)
+    w1_array = np.array(w1_list)
+    w2_array = np.array(w2_list)
+
+    valid_indices_1 = np.where(np.array(valid_1))[0]
+    valid_indices_2 = np.where(np.array(valid_2))[0]
+
+    # Si input scalaire → retourner des scalaires
+    if scalar_input:
+        return z1_array[0], z2_array[0], w1_array[0], w2_array[0], (valid_indices_1, valid_indices_2)
+    else:
+        return z1_array, z2_array, w1_array, w2_array, (valid_indices_1, valid_indices_2)
+
 
 
 # -- Kaertner classnotes -- #
