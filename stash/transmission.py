@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from scipy.special import jv  # Bessel functions
 
-import utils.plot_parameters
+import utils.plot_style
 
 
 # Define parameters

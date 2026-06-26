@@ -18,7 +18,7 @@ _golden = (1.0 + 5.0 ** 0.5) / 2.0  # 1.618 — default aspect ratio
 def fig_size(width_frac=1.0, aspect=None):
     """
     Return (width, height) in inches so that matplotlib's font sizes
-    match LaTeX's after $\includegraphics[width=<width_frac>\textwidth]{...}$.
+    match LaTeX's after $includegraphics[width=<width_frac>\textwidth]{...}$.
 
     width_frac : fraction of \textwidth  (1.0 = full, 0.5 = side-by-side)
     aspect     : height/width ratio. Defaults to 1/golden.

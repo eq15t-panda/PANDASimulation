@@ -16,7 +16,7 @@ def finesse(T, Loss=0.):
 def FSR_bowtie(L):
     """
     Free Spectral Range (frequency domain) for a bow-tie ring cavity
-    :param L: Cavity length
+    :param L: cavity length
     :return:
     """
     return c / L
@@ -31,23 +31,3 @@ def bandwidth(T, Loss, L):
     :return:
     """
     return FSR_bowtie(L=L) / finesse(T=T, Loss=Loss)
-
-def Escape_efficiency(T, Loss):
-    """
-    
-    :param T: Transmission coefficient
-    :param Loss: Intra-cavity loss
-    :return: 
-    """
-    return T / (T + Loss)
-
-
-def Pump_threshold(T, Loss, E):
-    """
-    Pump threshold power
-    :param T: Transmission coefficient
-    :param Loss: Loss: Intra-cavity loss
-    :param E: Effective non-linearity of optical medium
-    :return:
-    """
-    return ((T + Loss) ** 2) / (4 * E)
