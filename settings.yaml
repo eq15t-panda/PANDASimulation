@@ -7,10 +7,10 @@ cmap_name: 'gray'
 alpha: 0.8
 
 plot_bandwidth: False
-plot_waist: True
+plot_waist: False
 plot_pump_power: False
 squeezing_wavelength: False
-plot_threshold: False
+plot_threshold: True
 plug_value: False
 
 # Wavelength

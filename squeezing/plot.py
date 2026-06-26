@@ -3,7 +3,7 @@ import numpy as np
 
 from squeezing.noise_spectrum import noise_spectrum_x, noise_spectrum_p
 from utils.settings import settings
-import utils.plot_parameters as pm
+import utils.plot_style as pm
 
 # -- Arrays definitions -- #
 lambda_array = np.linspace(start=0, stop=1000, num=settings.number_points) * 1e-9  # wavelength

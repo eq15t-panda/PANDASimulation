@@ -8,7 +8,7 @@ import numpy as np
 import sqlite3
 
 from utils.settings import settings
-import utils.plot_parameters as mplp
+import utils.plot_style as mplp
 from utils.tools_db import load_all_data
 
 import cavity.cavity_formulas as cf

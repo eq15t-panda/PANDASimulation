@@ -1,8 +1,3 @@
-import numpy as np
-
-from utils.settings import settings
-
-
 def noise_spectrum_x(omega, omega_c, escape_efficiency, epsilon):
     """
     :param omega: Frequency (Hz)
