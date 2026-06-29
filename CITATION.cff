@@ -1,6 +1,6 @@
 message: "If you use this code, please cite it as below."
 authors:
-  - family-names: ChrisZeThird
-title: "Squeezed States Simulation"
+  - family-names: William GENETELLI
+title: "Simulation to Design a Squeezed Light Source Compatible with Atomic Experiment"
 date-released: 2024-05-01
 url: https://github.com/ChrisZeThird/SqueezingSimulation
