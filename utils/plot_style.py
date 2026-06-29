@@ -6,7 +6,7 @@ from matplotlib.legend_handler import HandlerBase
 from numpy import vstack, linspace
 
 # ------------------------------------------------
-# Document geometry — derived from your preamble
+# Document geometry — derived from preamble
 # A4=210mm, margins=2×25mm, binding=10mm
 # textwidth = 210 - 50 - 10 = 150mm
 # ------------------------------------------------
