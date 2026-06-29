@@ -5,7 +5,7 @@ from matplotlib.gridspec import GridSpec
 from nlo.sellmeier import n_z
 from utils.tools_db import load_all_data
 from utils.settings import settings
-import utils.plot_parameters
+import utils.plot_style
 
 
 def safe_divide(array, value):

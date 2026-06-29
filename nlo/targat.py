@@ -1,131 +1,106 @@
-import matplotlib.pyplot as plt
 import numpy as np
-
-from scipy.constants import c, epsilon_0
-from scipy.integrate import dblquad
-from scipy.optimize import fsolve
-
-from nlo.sellmeier import n_z
-import utils.plot_parameters
-from utils.settings import settings
-
-# Analysis of singly resonant SHG efficiency versus focusing
-wavelength_pump = 795e-9
-wavelength_harmonic = wavelength_pump / 2
-
-omega = 2 * np.pi * settings.c / wavelength_pump
-
-d_eff = 9.5e-12  # effective nonlinear coefficient for PPKTP
-n_pump = n_z(wavelength_pump * 1e6)  # convert to micrometers for n_z function
-n_harmonic = n_z(wavelength_harmonic * 1e6)  # convert to micrometers for n_z function
-
-alpha_harmonic = 0.14  # absorption coefficient at 2ω (cm^-1)
-alpha_harmonic /= 100  # convert to m^-1
-alpha_pump = 0  # assume negligible FF absorption
-
-L_c = settings.crystal_length  # crystal length in meters
-k_omega = 2 * np.pi * n_pump / wavelength_pump
+from scipy.optimize import brentq, minimize_scalar
 
 
-# Function for h(α, L, r), here r = 0
-def h_function(alpha, L):
-    def integrand(s, sp):
-        numerator = np.exp(-alpha * (s + sp + L))
-        denominator = (1 + 1j * s) * (1 - 1j * sp)
-        return (numerator / denominator).real
-
-    val, _ = dblquad(integrand, -L / 2, L / 2, lambda s: -L / 2, lambda s: L / 2)
-    return val / (2 * L)
-
-
-# Focusing parameter sweep
-w0_range = np.linspace(start=10e-6, stop=70e-6, num=500)
-z_R = np.pi * w0_range ** 2 * n_pump / wavelength_pump
-L_array = L_c / z_R
-alpha = (alpha_pump - alpha_harmonic / 2) * z_R
-
-# Compute C_effective for each w0
-Gamma_eff = []
-for a, L in zip(alpha, L_array):
-    h_val = h_function(a, L)
-    c_eff = (2 * omega ** 2 * d_eff ** 2 / (np.pi * epsilon_0 * c ** 3 * n_pump ** 2 * n_harmonic)) \
-           * L_c * k_omega * np.exp(-alpha_harmonic * L_c) * h_val
-    Gamma_eff.append(c_eff)
-
-Gamma_eff = np.array(Gamma_eff)  # convert to numpy array for further calculations
-Gamma_tot = 1.1 * Gamma_eff  # total gain coefficient, plane wave approximation from Le Targat et al. 2011
-
-
-# Optimal transmission factor
-def T1_opt(Gamma, epsilon=0.02, P_in=310e-3):
+def xi_from_waist(w0, l, wavelength, n):
     """
-    Calculate the optimal transmission factor T1.
-    Default values from Le Targat et al. 2011.
-    :param Gamma: gain coefficient
-    :param epsilon: small parameter for stability
-    :param P_in: input power
-    :return: optimal transmission factor T1
+    Convert beam waist w0 (m) to BK focusing parameter xi using
+    xi = l * lambda / (2 * n * pi * w0^2)
     """
-    return (epsilon / 2) + np.sqrt((epsilon / 2) ** 2 + (Gamma * P_in))
+    return (l * wavelength) / (2.0 * n * np.pi * (w0 ** 2))
 
 
-# Eq (3): Solve numerically for eta
-def solve_eta(T1, Gamma, Gamma_eff, P_in=310e-3, epsilon=0.02):
+def compute_h(sigma, xi, alpha, N=500):
+    """Numerically compute h(sigma, xi, alpha) using a 2D trapezoidal rule.
+
+    Parameters
+    - sigma: scalar
+    - xi: scalar > 0
+    - alpha: scalar (can be zero)
+    - N: grid points per dimension (increasing improves accuracy, slows down)
+
+    Returns real(h)
     """
-    Solve the implicit eta equation from Le Targat et al.:
-    sqrt(eta) * [2 - sqrt(1 - T1) * (2 - epsilon - Gamma * sqrt(eta * P_in / Gamma_eff))]^2
-    - 4 * T1 * sqrt(Gamma_eff * P_in) = 0
+    # integration domain
+    tau = np.linspace(-xi, xi, N)
+    # create 2D grid: rows -> tau_i, cols -> tau_j (tau')
+    T, Tp = np.meshgrid(tau, tau, indexing='ij')
+
+    # integrand
+    numer = np.exp(1j * sigma * (T - Tp)) * np.exp(-alpha * (T + Tp))
+    denom = (1 + 1j * T) * (1 - 1j * Tp)
+    integrand = numer / denom
+
+    # inner integral over tau' (axis=1), then outer over tau (axis=0)
+    inner = np.trapezoid(integrand, x=tau, axis=1)
+    total = np.trapezoid(inner, x=tau)
+
+    h = total / (4.0 * xi)
+    return np.real(h)
+
+
+def find_sigma_opt(xi, alpha, sigma_bounds=(0.0, 5.0), N_coarse=200, N_refine=500):
+    """Find sigma that maximizes h for given xi and alpha.
+    Do a two-stage search: coarse bounded minimization (neg h) then refine around found minimum.
+    Returns (sigma_opt, h_max)
     """
-    def equation(eta):
-        if eta < 0 or eta > 1:
-            return np.inf  # restrict to physical domain
-        sqrt_eta = np.sqrt(eta)
-        sqrt_term = np.sqrt(1 - T1)
-        inner = 2 - epsilon - Gamma * np.sqrt((eta * P_in) / Gamma_eff)
-        bracket = 2 - sqrt_term * inner
-        lhs = sqrt_eta * bracket**2
-        rhs = 4 * T1 * np.sqrt(Gamma_eff * P_in)
-        return lhs - rhs
+    # objective for minimizer (minimize negative h)
+    def obj(s):
+        return -compute_h(s, xi, alpha, N=N_coarse)
 
-    eta_guess = 0.5
-    eta_solution, = fsolve(equation, eta_guess)
-    return eta_solution if 0 <= eta_solution <= 1 else np.nan
+    res = minimize_scalar(obj, bounds=sigma_bounds, method='bounded', options={'xatol':1e-3})
+    sigma0 = float(res.x)
 
+    # refine by searching in a narrower window around sigma0
+    low = max(sigma_bounds[0], sigma0 - 0.8)
+    high = min(sigma_bounds[1], sigma0 + 0.8)
 
-# Input power range
-P_in_values = np.array([300, 400, 500, 1000])  # Different input powers in mW
-eta_results = {}
+    def obj_ref(s):
+        return -compute_h(s, xi, alpha, N=N_refine)
 
-for P_in in P_in_values:
-    eta_vals = []
-    T1 = T1_opt(Gamma=Gamma_tot, P_in=P_in*1e-3)
-    for T1, G, Geff in zip(T1, Gamma_tot, Gamma_eff):
-        eta = solve_eta(T1, G, Geff, P_in=P_in*1e-3)
-        eta_vals.append(eta)
-    eta_results[str(P_in)] = np.array(eta_vals)
+    res2 = minimize_scalar(obj_ref, bounds=(low, high), method='bounded', options={'xatol':1e-4})
+    sigma_opt = float(res2.x)
+    h_max = compute_h(sigma_opt, xi, alpha, N=N_refine)
+    return sigma_opt, h_max
 
 
-# Compute the maximum eta and corresponding waist values
-max_eta_results = {}
+def optimal_T1(epsilon, Gamma, P_in):
+    """T1_opt = epsilon/2 + sqrt((epsilon/2)^2 + Gamma * P_in)"""
+    return 0.5 * epsilon + np.sqrt((0.5 * epsilon)**2 + Gamma * P_in)
 
-# Create the plot
-fig, ax = plt.subplots(figsize=(8, 5))
 
-for P_in, eta_vals in eta_results.items():
-    max_index = np.argmax(eta_vals)
-    max_eta = eta_vals[max_index]
-    corresponding_w0 = w0_range[max_index]
-    max_eta_results[P_in] = (max_eta, corresponding_w0)
-    # ax.plot(L_array, eta_vals, label=f"P_in = {P_in} mW")
-    ax.plot(w0_range * 1e6, eta_vals, label=rf"$P_{{\text{{in}}}} = {P_in}\,\text{{mW}}$")
+def intracavity_power(T1, epsilon, Gamma_eff, P_in):
+    """
+    Solve Pc = T1*P_in / (T1 + epsilon + Gamma_eff*Pc)^2 robustly.
+    Return np.nan on failure.
+    """
+    def f(Pc):
+        denom = (T1 + epsilon + Gamma_eff * Pc)
+        return Pc - (T1 * P_in) / (denom * denom)
 
-# Add labels, title, and legend
-# ax.set_xlabel(r"Focusing Parameter $L = L_c / z_R$")
-ax.set_ylabel(r"Conversion Efficiency $\eta$")
-ax.set_xlabel(r"Waist $w_0$ (μm)")
-# ax.set_title(r"SHG Efficiency $\eta$ vs Focusing Parameter $L$ for Different Input Powers")
-ax.set_title(r"SHG Efficiency $\eta$ vs waist $w_0$ for Different Input Powers")
-ax.legend()
-ax.grid(True)
-plt.tight_layout()
-plt.show()
+    # bracket: [0, P_up]
+    P_up = max(1e3 * P_in, 1.0)
+    try:
+        # ensure signs differ
+        fa = f(0.0)
+        fb = f(P_up)
+        if np.sign(fa) == np.sign(fb):
+            # try expanding the bracket a bit
+            P_up *= 1e3
+            fb = f(P_up)
+            if np.sign(fa) == np.sign(fb):
+                return np.nan
+        Pc = brentq(f, 0.0, P_up, maxiter=200)
+        return Pc
+    except Exception:
+        return np.nan
+
+
+def impedance_match_intravavity_power(P_in, T1_opt):
+    """
+    Compute intracavity power at impedance matching.
+    :param P_in:
+    :param T1_opt:
+    :return:
+    """
+    return P_in / T1_opt

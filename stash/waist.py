@@ -5,7 +5,7 @@ import matplotlib.gridspec as gridspec
 import numpy as np
 
 import cavity.cavity_formulas as cf
-import utils.plot_parameters as pm
+import utils.plot_style as pm
 from utils.settings import settings
 
 
