@@ -144,15 +144,6 @@ def set_plot_style(width_frac=1.0, aspect=None):
     })
 
 
-class AnyObjectHandler(HandlerBase):
-
-    def create_artists(self, legend, orig_handle,
-                       x0, y0, width, height, fontsize, trans):
-        l1 = plt.Line2D([x0, y0 + width], [0.7 * height, 0.7 * height], linestyle=orig_handle[1], color=orig_handle[0])
-        l2 = plt.Line2D([x0, y0 + width], [0.3 * height, 0.3 * height], color=orig_handle[0])
-        return [l1, l2]
-
-
 def symmetrical_colormap(cmap_settings, new_name=None):
     """
     This function take a colormap and create a new one, as the concatenation of itself by a symmetrical fold.

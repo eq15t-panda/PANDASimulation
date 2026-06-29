@@ -1,5 +1,4 @@
-configargparse
-matplotlib
+matplotlib # make sure you do "pip install --upgrade matplotlib" once installed (https://github.com/matplotlib/matplotlib/pull/31910)
 numpy
 scipy
 pandas
