@@ -70,7 +70,7 @@ def set_plot_style(width_frac=1.0, aspect=None):
         "figure.dpi": 180,
 
         "savefig.dpi": 400,
-        "savefig.bbox": "tight",
+        # "savefig.bbox": "tight",
         "savefig.pad_inches": 0.03,
 
         # ------------------------------------------------
