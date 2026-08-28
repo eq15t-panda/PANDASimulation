@@ -2,8 +2,11 @@ import matplotlib as mpl
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 from matplotlib.legend_handler import HandlerBase
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 
 from numpy import vstack, linspace
+
+from utils.plot_helper import cmap_map
 
 # ------------------------------------------------
 # Document geometry — derived from preamble
@@ -32,6 +35,29 @@ custom = {
     "blue390": "#007dff",
     "red780": "#ff0000",
 }
+
+# custom map
+colors = ["orange", "yellow", "white", "lightblue", "darkblue"]
+
+# Diverging: purple -> white -> green
+diverging_cmap = LinearSegmentedColormap.from_list(
+    "custom_diverging",
+    [
+        (118/255, 42/255, 131/255),   # purple
+        (247/255, 247/255, 247/255),  # white
+        (27/255,  120/255, 55/255),   # green
+    ]
+)
+
+# Sequential: cream -> orange -> dark brown
+sequential_cmap = LinearSegmentedColormap.from_list(
+    "custom_sequential",
+    [
+        (255/255, 225/255, 229/255),  # cream
+        (251/255, 154/255, 41/255),   # orange
+        (102/255, 37/255,  6/255),    # dark brown
+    ]
+)
 
 
 def set_plot_style(width_frac=1.0, aspect=None):

@@ -1,5 +1,6 @@
 from itertools import chain
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 import matplotlib
 import numpy as np
 
@@ -33,3 +34,28 @@ def cmap_map(function, cmap):
         cdict[key] = colorvector
 
     return matplotlib.colors.LinearSegmentedColormap('colormap',cdict,1024)
+
+
+def red_custom(z):
+    n_colors = 20  # number of discrete levels
+
+    custom_red = LinearSegmentedColormap.from_list(
+        "optical_red",
+        [
+            (0.00, "#fff3f2"),
+            (0.20, "#FFD3CC"),
+            (0.40, "#FFA59B"),
+            (0.60, "#FF968B"),
+            (0.80, "#FF746C"),
+            (1.00, "#FF4A3B"),
+        ],
+        N=256
+    )
+
+    custom_red_light = cmap_map(lambda x: x / 2 + 0.4, custom_red)
+
+    vmin_rd = z.max()
+    vmax_rd = z.min()
+
+    cmap = ListedColormap(custom_red_light(np.linspace(0, 1, n_colors)))
+    return cmap, vmin_rd, vmax_rd
