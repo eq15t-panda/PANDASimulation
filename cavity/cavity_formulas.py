@@ -65,26 +65,18 @@ def reflection(Psi, T, L):
 
 
 # -- PDH
-def pdh_error(Psi, T, L,
-              modulation_phase=5.0,
-              demod_phase=np.pi/2,
-              reflection_detection=True):
-    """
-    Simulate a PDH error signal.
-    """
+def r_c(Psi, T, L):
+    return np.sqrt(1 - T) * (1 - (1 - L) * np.exp(1j * Psi)) / \
+           (1 - (1 - T) * (1 - L) * np.exp(1j * Psi))
 
-    if reflection_detection:
-        h = reflection
-    else:
-        h = transmission
-
-    h0 = h(Psi, T, L)
-    hp = h(Psi + modulation_phase, T, L)
-    hm = h(Psi - modulation_phase, T, L)
-
-    error = -(
-        np.real(np.conj(h0) * (hp - hm)) * np.cos(demod_phase)
-        - np.imag(np.conj(h0) * (hp + hm)) * np.sin(demod_phase)
+def error_signal(f, Omega_m, T, L, FSR, phi, beta=0.1):
+    Psi0 = 2 * np.pi * f / FSR
+    Psim = 2 * np.pi * Omega_m / FSR
+    h0 = r_c(Psi0, T, L)
+    hp = r_c(Psi0 + Psim, T, L)
+    hm = r_c(Psi0 - Psim, T, L)
+    P0, Psb = 1.0, beta**2 / 4
+    return -np.sqrt(P0 * Psb) * (
+        (np.conj(h0) * (hp - hm)).real * np.cos(phi)
+        - (np.conj(h0) * (hp + hm)).imag * np.sin(phi)
     )
-
-    return error
