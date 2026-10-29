@@ -1,42 +1,40 @@
 import matplotlib as mpl
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
-from matplotlib.legend_handler import HandlerBase
-from matplotlib.colors import LinearSegmentedColormap, ListedColormap
+from matplotlib.colors import LinearSegmentedColormap
 
 from numpy import vstack, linspace
 
 from utils.plot_helper import cmap_map
 
 # ------------------------------------------------
-# Document geometry — derived from preamble
-# A4=210mm, margins=2×25mm, binding=10mm
-# textwidth = 210 - 50 - 10 = 150mm
+# Document geometry — must match your .tex preamble exactly
+# \documentclass[a4paper,11pt]{book}
+# \usepackage[margin=28mm,includeheadfoot]{geometry}
+# textwidth = 210 - 2×28 = 154mm  (includeheadfoot doesn't affect width)
 # ------------------------------------------------
 _mm_to_in = 1.0 / 25.4
-_textwidth = 150.0 * _mm_to_in  # 5.906 inches — full \textwidth
+_textwidth = 149.0 * _mm_to_in  # 5.906 inches — full \textwidth
+PANEL_W = (149.0 - 5.0) / 2 * _mm_to_in  # 72mm — half-width with 5mm gutter
 _golden = (1.0 + 5.0 ** 0.5) / 2.0  # 1.618 — default aspect ratio
 
-
-def fig_size(width_frac=1.0, aspect=None):
-    """
-    Return (width, height) in inches so that matplotlib's font sizes
-    match LaTeX's after $includegraphics[width=<width_frac>\textwidth]{...}$.
-
-    width_frac : fraction of \textwidth  (1.0 = full, 0.5 = side-by-side)
-    aspect     : height/width ratio. Defaults to 1/golden.
-    """
-    w = _textwidth * width_frac
-    h = w / _golden if aspect is None else w * aspect
-    return w, h
-
+# ------------------------------------------------
+# LaTeX font sizes at 11pt book class
+# Use these explicitly — never hardcode a number
+# ------------------------------------------------
+NORMALSIZE = 10.95  # \normalsize
+SMALL = 10.0    # \small
+FOOTNOTESIZE = 9.0    # \footnotesize
+SCRIPTSIZE = 8.0    # \scriptsize
 
 custom = {
     "blue390": "#007dff",
     "red780": "#ff0000",
 }
 
-# custom map
+# ------------------------------------------------
+# Custom color maps
+# ------------------------------------------------
 colors = ["orange", "yellow", "white", "lightblue", "darkblue"]
 
 # Diverging: purple -> white -> green
@@ -60,6 +58,22 @@ sequential_cmap = LinearSegmentedColormap.from_list(
 )
 
 
+# ------------------------------------------------
+# Helper functions
+# ------------------------------------------------
+def fig_size(width_frac=1.0, aspect=None):
+    """
+    Return (width, height) in inches so that matplotlib's font sizes
+    match LaTeX's after $includegraphics[width=<width_frac>\textwidth]{...}$.
+
+    width_frac : fraction of \textwidth  (1.0 = full, 0.5 = side-by-side)
+    aspect     : height/width ratio. Defaults to 1/golden.
+    """
+    w = _textwidth * width_frac
+    h = w / _golden if aspect is None else w * aspect
+    return w, h
+
+
 def set_plot_style(width_frac=1.0, aspect=None):
     # Add custom colors to CSS4_COLORS for easy use by name
     mcolors._colors_full_map.update(custom)
@@ -68,36 +82,32 @@ def set_plot_style(width_frac=1.0, aspect=None):
     mpl.rcParams.update({
 
         # ------------------------------------------------
-        # Typography
+        # Typography — match document exactly
         # ------------------------------------------------
         "text.usetex": True,
         "text.latex.preamble":
             r"\usepackage{libertine}"
             r"\usepackage[libertine]{newtxmath}",
-
         "font.family": "serif",
 
-        # Slightly larger than document body for readability
-        "font.size": 12,
-        "axes.labelsize": 12,
-        "axes.titlesize": 12,
-
-        "xtick.labelsize": 12,
-        "ytick.labelsize": 12,
-
-        "legend.fontsize": 12,
+        # Hierarchy
+        "font.size": NORMALSIZE,  # 10.95 — base
+        "axes.titlesize": NORMALSIZE,  # same level as body text
+        "axes.labelsize": SMALL,  # 10pt — slightly subordinate
+        "xtick.labelsize": FOOTNOTESIZE,  # 9pt  — clearly subordinate
+        "ytick.labelsize": FOOTNOTESIZE,  # 9pt
+        "legend.fontsize": FOOTNOTESIZE,  # 9pt
 
         # ------------------------------------------------
         # Figure geometry
         # ------------------------------------------------
         "figure.figsize": fig_size(width_frac, aspect),
-
         # Higher preview DPI helps notebook rendering
         "figure.dpi": 180,
 
         "savefig.dpi": 400,
         # "savefig.bbox": "tight",
-        "savefig.pad_inches": 0.03,
+        "savefig.pad_inches": 0.01,
 
         # ------------------------------------------------
         # Axes
@@ -112,26 +122,24 @@ def set_plot_style(width_frac=1.0, aspect=None):
         # ------------------------------------------------
         # Ticks
         # ------------------------------------------------
-        "xtick.direction": "in",
-        "ytick.direction": "in",
+        "xtick.direction":      "in",
+        "ytick.direction":      "in",
 
-        "xtick.top": True,
-        "ytick.right": True,
+        "xtick.top":            True,
+        "ytick.right":          True,
 
-        "xtick.major.size": 5,
-        "ytick.major.size": 5,
+        "xtick.major.size":     4.0,
+        "ytick.major.size":     4.0,
+        "xtick.minor.size":     2.0,
+        "ytick.minor.size":     2.0,
 
-        "xtick.minor.size": 2.5,
-        "ytick.minor.size": 2.5,
+        "xtick.major.width":    0.8,
+        "ytick.major.width":    0.8,
+        "xtick.minor.width":    0.5,
+        "ytick.minor.width":    0.5,
 
-        "xtick.major.width": 0.8,
-        "ytick.major.width": 0.8,
-
-        "xtick.minor.width": 0.4,
-        "ytick.minor.width": 0.4,
-
-        "xtick.minor.visible": True,
-        "ytick.minor.visible": True,
+        "xtick.minor.visible":  True,
+        "ytick.minor.visible":  True,
 
         # ------------------------------------------------
         # Grid
@@ -142,8 +150,8 @@ def set_plot_style(width_frac=1.0, aspect=None):
         # ------------------------------------------------
         # Lines
         # ------------------------------------------------
-        "lines.linewidth": 1.8,
-        "lines.markersize": 5,
+        "lines.linewidth": 1.5,
+        "lines.markersize": 4.0,
 
         # ------------------------------------------------
         # Color cycle — link blue + cite purple anchor
